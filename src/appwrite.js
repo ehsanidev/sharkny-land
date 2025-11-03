@@ -54,3 +54,22 @@ export const updateSearchCount = async (searchTerm, movie) => {
         console.error("Appwrite search count update error:", error);
     }
 };
+
+// En çok aranmış 5 filmi getir (count'a göre azalan)
+export const getTrendingMovies = async (limit = 5) => {
+    try {
+        const result = await database.listDocuments(
+            DATABASE_ID,
+            COLLECTION_ID,
+            [
+                Query.orderDesc('count'),  // count'a göre büyükten küçüğe
+                Query.limit(limit)         // kaç tane dönsün
+            ]
+        );
+
+        return result.documents;
+    } catch (error) {
+        console.error("Appwrite: Failed to fetch trending movies:", error);
+        return []; // Hata olursa boş array dön, UI çökmesin
+    }
+};

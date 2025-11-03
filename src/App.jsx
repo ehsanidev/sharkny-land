@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useDebounce } from 'react-use';
+import { updateSearchCount, getTrendingMovies } from './appwrite';
 
 import Search from './components/Search'
 import LoadingSpinner from './components/LoadingSpinner';
@@ -21,6 +22,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [movieList, setMovieList] = useState([]);
+  const [TrendingMovies, setTrendingMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
 
@@ -49,7 +51,11 @@ const App = () => {
         return;
       }
 
-      setMovieList(data.results || [])
+      setMovieList(data.results || []);
+
+      if(query && data.results.length > 0) {
+        await updateSearchCount(query, data.results[0]);
+      }
 
     } catch (error) {
       console.log(`Error fetching movies: ${error}`);
@@ -58,6 +64,19 @@ const App = () => {
       setIsLoading(false);
     }
   }
+
+  const loadTrendingMovies = async () => {
+    try {
+      const movies = await getTrendingMovies();
+      setTrendingMovies(movies); 
+    } catch (error){
+      console.error(`Error fetching trending movies: ${error}`);
+    }
+  }
+
+    useEffect(() => {
+    loadTrendingMovies();
+  }, []);
 
   useEffect(() => {
     fetchMovies(debouncedSearchTerm);
@@ -77,8 +96,23 @@ const App = () => {
 
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
         </header>
+        {
+          TrendingMovies.length > 0 && (
+            <section className="trending">
+              <h2>Trending Movies</h2>
+              <ul>
+                {TrendingMovies.map((movie, index) => (
+                  <li key={movie.$id}>
+                    <p>{index + 1}</p>
+                    <img src={movie.poster_url} alt={movie.title} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
         <section className="all-movies">
-          <h2 className="mt-10 font-dm-sans">All Movies</h2>
+          <h2 className="font-dm-sans">All Movies</h2>
 
           {isLoading?(
             <LoadingSpinner/>
